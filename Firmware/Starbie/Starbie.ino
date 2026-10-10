@@ -196,7 +196,6 @@ void updateMpu() {
     return;
   }
   lastMpuReadAt = millis();
-
   sensors_event_t acceleration;
   sensors_event_t gyro;
   sensors_event_t sensorTemperature;
@@ -205,13 +204,11 @@ void updateMpu() {
   accelerationY = acceleration.acceleration.y;
   accelerationZ = acceleration.acceleration.z;
 }
-
 void updateDht() {
   if (!dhtFound || millis() - lastDhtReadAt < DHT_READ_INTERVAL_MS) {
     return;
   }
   lastDhtReadAt = millis();
-
   const float newHumidity = dht.readHumidity();
   const float newTemperatureC = dht.readTemperature();
   if (!isnan(newHumidity)) {
@@ -221,26 +218,21 @@ void updateDht() {
     temperatureC = newTemperatureC;
   }
 }
-
 int petWalkingX(uint32_t now) {
   const int farthestX = SCREEN_WIDTH - PET_SPRITE_WIDTH;
   const uint32_t roundTrip = static_cast<uint32_t>(farthestX) * 2;
   const uint32_t step = (now / PET_WALK_PIXEL_MS) % roundTrip;
   return step <= farthestX ? step : roundTrip - step;
 }
-
 uint32_t playRunDuration() {
   return static_cast<uint32_t>(PLAY_LAP_MS) * PLAY_LAP_COUNT;
 }
-
 bool isNapping() {
   return nappingUntil != 0 && millis() < nappingUntil;
 }
-
 bool isPlaying() {
   return playRunStartedAt != 0 && millis() - playRunStartedAt < playRunDuration();
 }
-
 int playRunX(uint32_t now) {
   const int farthestX = SCREEN_WIDTH - PET_SPRITE_WIDTH;
   const uint32_t lapAge = (now - playRunStartedAt) % PLAY_LAP_MS;
@@ -248,22 +240,17 @@ int playRunX(uint32_t now) {
   return progress < 0.5f ? static_cast<int>(progress * 2.0f * farthestX)
                          : static_cast<int>((1.0f - progress) * 2.0f * farthestX);
 }
-
 void updatePetTimers() {
   if (nappingUntil != 0 && !isNapping()) {
-    nappingUntil = 0;  // The pet wakes naturally when its nap time is over.
+    nappingUntil = 0; 
   }
   if (playRunStartedAt != 0 && !isPlaying()) {
-    playRunStartedAt = 0;  // PLAY is exactly two left-to-right-to-left laps.
+    playRunStartedAt = 0;  
   }
 }
-
-// While the menu is open, the MPU6050 acts like a tiny air mouse. The position
-// at the instant Button 1 opens the menu becomes the center for that menu use.
 void updateMenuBall() {
   float xTilt = accelerationX - menuCenterAccelerationX;
   float yTilt = accelerationY - menuCenterAccelerationY;
-
   if (SWAP_MPU_AXES) {
     const float oldXTilt = xTilt;
     xTilt = yTilt;
@@ -273,27 +260,20 @@ void updateMenuBall() {
   yTilt = constrain(yTilt * MENU_Y_DIRECTION, -MENU_TILT_LIMIT, MENU_TILT_LIMIT);
   const float targetX = MENU_CENTER_X + (xTilt / MENU_TILT_LIMIT) * MENU_BALL_X_RANGE;
   const float targetY = MENU_CENTER_Y + (yTilt / MENU_TILT_LIMIT) * MENU_BALL_Y_RANGE;
-
-  // This small amount of smoothing makes the ball feel less jittery.
   menuBallX += (targetX - menuBallX) * 0.20f;
   menuBallY += (targetY - menuBallY) * 0.20f;
-
-  // The menu has four full sectors, not four tiny targets. Any tilt direction
-  // past the center dead zone selects its matching top/right/bottom/left action.
   if (fabsf(xTilt) < MENU_CENTER_DEADZONE && fabsf(yTilt) < MENU_CENTER_DEADZONE) {
     selectedMenuItem = -1;
   } else if (fabsf(xTilt) > fabsf(yTilt)) {
-    selectedMenuItem = xTilt > 0.0f ? 1 : 3;  // right or left
+    selectedMenuItem = xTilt > 0.0f ? 1 : 3; 
   } else {
-    selectedMenuItem = yTilt > 0.0f ? 2 : 0;  // bottom or top
+    selectedMenuItem = yTilt > 0.0f ? 2 : 0;  
   }
 }
-
 void checkForShake() {
   if (!mpuFound || currentView != PET_VIEW) {
     return;
   }
-
   const float magnitude = sqrtf(accelerationX * accelerationX +
                                 accelerationY * accelerationY +
                                 accelerationZ * accelerationZ);
@@ -301,28 +281,24 @@ void checkForShake() {
   if (fabsf(magnitude - STANDARD_GRAVITY) >= SHAKE_THRESHOLD &&
       now - lastShakeAt >= SHAKE_COOLDOWN_MS) {
     lastShakeAt = now;
-    nappingUntil = 0;  // A shake wakes a sleeping pet right away.
+    nappingUntil = 0; 
     shakeAnimationEndsAt = now + 350;
     changePet(SHAKE_JOY_CHANGE, SHAKE_ENERGY_CHANGE, SHAKE_FULLNESS_CHANGE);
     savePet();
   }
 }
-
 void openMenu() {
   currentView = MENU_VIEW;
   selectedMenuItem = -1;
   menuBallX = MENU_CENTER_X;
   menuBallY = MENU_CENTER_Y;
-  // Calibrate here so every menu starts from however the builder is holding it.
   menuCenterAccelerationX = accelerationX;
   menuCenterAccelerationY = accelerationY;
 }
-
 void chooseMenuItem() {
   if (selectedMenuItem == -1) {
-    return;  // Keep the menu open until the ball reaches a choice.
+    return;  
   }
-
   const MenuItem &item = MENU_ITEMS[selectedMenuItem];
   changePet(item.joyChange, item.energyChange, item.fullnessChange);
   savePet();
@@ -330,7 +306,6 @@ void chooseMenuItem() {
   nappingUntil = 0;
   heartAnimationEndsAt = 0;
   playRunStartedAt = 0;
-
   if (item.reaction == NAP_REACTION) {
     petJumpStartedAt = 0;
     nappingPetX = petWalkingX(now);
@@ -340,7 +315,6 @@ void chooseMenuItem() {
     playRunStartedAt = now;
     heartAnimationEndsAt = now + playRunDuration();
   } else {
-    // A confirmed action gets a little anticipation shake before the jump.
     petJumpStartedAt = now;
     if (item.reaction == HEART_REACTION) {
       heartAnimationEndsAt = now + HEARTS_DURATION_MS;
@@ -348,7 +322,6 @@ void chooseMenuItem() {
   }
   currentView = PET_VIEW;
 }
-
 void handleButtons() {
   if (wasPressed(buttonOne)) {
     if (currentView == MENU_VIEW) {
@@ -357,15 +330,11 @@ void handleButtons() {
       openMenu();
     }
   }
-
   if (wasPressed(buttonTwo)) {
-    // Button 2 never changes the pet. It only lets you peek at the values.
     currentView = currentView == STATS_VIEW ? PET_VIEW : STATS_VIEW;
   }
 }
-
 void drawHeart(int x, int y) {
-  // A tiny seven-pixel-wide heart that stays crisp on the OLED.
   display.fillRect(x - 2, y, 2, 2, SSD1306_WHITE);
   display.fillRect(x + 1, y, 2, 2, SSD1306_WHITE);
   display.fillRect(x - 3, y + 2, 7, 2, SSD1306_WHITE);
@@ -373,21 +342,17 @@ void drawHeart(int x, int y) {
   display.fillRect(x - 1, y + 5, 3, 1, SSD1306_WHITE);
   display.drawPixel(x, y + 6, SSD1306_WHITE);
 }
-
 void drawHearts(uint32_t now, int petX, int petY) {
   if (now >= heartAnimationEndsAt) {
     return;
   }
-
   const float progress =
       1.0f - static_cast<float>(heartAnimationEndsAt - now) / HEARTS_DURATION_MS;
   const int rise = static_cast<int>(progress * 18.0f);
   drawHeart(petX + 10, petY - 3 - rise);
   drawHeart(petX + 22, petY - 9 - rise / 2);
 }
-
 void drawSleepZs(uint32_t now, int petX, int petY) {
-  // The Zs float upward, then loop back down while the pet is napping.
   const int rise = static_cast<int>((now / 300UL) % 15UL);
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
@@ -396,25 +361,19 @@ void drawSleepZs(uint32_t now, int petX, int petY) {
   display.setCursor(petX + 28, petY - 8 - rise / 2);
   display.print("z");
 }
-
 void drawPet() {
   display.clearDisplay();
-
   const uint32_t now = millis();
   int petX = isNapping() ? nappingPetX : petWalkingX(now);
   if (isPlaying()) {
     petX = playRunX(now);
   }
   int petY = SCREEN_HEIGHT - PET_SPRITE_HEIGHT;
-
-  // The pet always wanders except during a nap; PLAY temporarily takes over.
   if (now < shakeAnimationEndsAt) {
     petX += static_cast<int>(sinf(now / 18.0f) * 3.0f);
   }
-
   if (!isNapping() && petJumpStartedAt != 0) {
     const uint32_t animationAge = now - petJumpStartedAt;
-
     if (animationAge < PET_PRE_JUMP_MS) {
       petX += static_cast<int>(sinf(now / 16.0f) * 3.0f);
     } else if (animationAge < PET_PRE_JUMP_MS + PET_JUMP_MS) {
@@ -425,24 +384,20 @@ void drawPet() {
       petJumpStartedAt = 0;
     }
   }
-
   petX = constrain(petX, 0, SCREEN_WIDTH - PET_SPRITE_WIDTH);
   display.drawBitmap(petX, petY, PET_SPRITE, PET_SPRITE_WIDTH, PET_SPRITE_HEIGHT,
                      SSD1306_WHITE);
-
   if (isNapping()) {
     drawSleepZs(now, petX, petY);
   }
   drawHearts(now, petX, petY);
 }
-
 void drawMenuItem(int item) {
   const int boxWidth = 33;
   const int boxHeight = 12;
   const int boxX = MENU_ITEM_X[item] - boxWidth / 2;
   const int boxY = MENU_ITEM_Y[item] - boxHeight / 2;
   const bool isSelected = item == selectedMenuItem;
-
   if (isSelected) {
     display.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 3, SSD1306_WHITE);
     display.setTextColor(SSD1306_BLACK);
@@ -450,28 +405,23 @@ void drawMenuItem(int item) {
     display.drawRoundRect(boxX, boxY, boxWidth, boxHeight, 3, SSD1306_WHITE);
     display.setTextColor(SSD1306_WHITE);
   }
-
   display.setTextSize(1);
   const int labelLength = strlen(MENU_ITEMS[item].label);
   display.setCursor(MENU_ITEM_X[item] - labelLength * 3, MENU_ITEM_Y[item] - 3);
   display.print(MENU_ITEMS[item].label);
   display.setTextColor(SSD1306_WHITE);
 }
-
 void drawMenu() {
   display.clearDisplay();
-  // The two diagonal lines divide the screen into four big selection sectors.
   display.drawLine(0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1, SSD1306_WHITE);
   display.drawLine(0, SCREEN_HEIGHT - 1, SCREEN_WIDTH - 1, 0, SSD1306_WHITE);
   for (int item = 0; item < MENU_ITEM_COUNT; item++) {
     drawMenuItem(item);
   }
-
   display.drawCircle(MENU_CENTER_X, MENU_CENTER_Y, 11, SSD1306_WHITE);
   display.fillCircle(static_cast<int>(menuBallX), static_cast<int>(menuBallY), 4,
                      SSD1306_WHITE);
 }
-
 void drawStatBar(int y, const char *label, int value) {
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
@@ -482,13 +432,11 @@ void drawStatBar(int y, const char *label, int value) {
   display.setCursor(109, y);
   display.print(value);
 }
-
 void drawStats() {
   display.clearDisplay();
   drawStatBar(5, "JOY", pet.joy);
   drawStatBar(20, "ENERGY", pet.energy);
   drawStatBar(35, "FULL", pet.fullness);
-
   display.setCursor(4, 53);
   if (!isnan(temperatureC)) {
     display.print("TEMP ");
@@ -497,7 +445,6 @@ void drawStats() {
   } else {
     display.print("TEMP --");
   }
-
   display.setCursor(76, 53);
   if (!isnan(humidity)) {
     display.print("H ");
@@ -507,7 +454,6 @@ void drawStats() {
     display.print("H --");
   }
 }
-
 void drawCurrentView() {
   if (currentView == MENU_VIEW) {
     drawMenu();
@@ -518,21 +464,18 @@ void drawCurrentView() {
   }
   display.display();
 }
-
 void setup() {
   Serial.begin(115200);
   Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
   setUpButton(buttonOne);
   setUpButton(buttonTwo);
   loadPet();
-
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
     Serial.println("OLED not found. Check power, GND, SDA, SCL, and address.");
     while (true) {
       delay(10);
     }
   }
-
   mpuFound = mpu.begin(MPU6050_ADDRESS, &Wire);
   if (mpuFound) {
     mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
@@ -541,27 +484,22 @@ void setup() {
   } else {
     Serial.println("MPU6050 not found. The menu will not move until it is connected.");
   }
-
   if (USE_DHT11) {
     dht.begin();
     dhtFound = true;
   }
-
   drawCurrentView();
 }
-
 void loop() {
   updateMpu();
   updateDht();
   updatePetTimers();
   handleButtons();
-
   if (currentView == MENU_VIEW) {
     updateMenuBall();
   } else {
     checkForShake();
   }
-
   drawCurrentView();
-  delay(16);  // Smooth display updates without making the code complicated.
+  delay(16);
 }
